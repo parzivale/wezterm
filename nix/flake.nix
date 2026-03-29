@@ -38,19 +38,16 @@
     };
   };
 
-  outputs =
-    inputs@{ self, ... }:
+  outputs = inputs @ {self, ...}:
     inputs.flake-utils.lib.eachDefaultSystem (
-      system:
-      let
-        overlays = [ (import inputs.rust-overlay) ];
-        pkgs = import (inputs.nixpkgs) { inherit system overlays; };
+      system: let
+        overlays = [(import inputs.rust-overlay)];
+        pkgs = import (inputs.nixpkgs) {inherit system overlays;};
 
         inherit (inputs.nixpkgs) lib;
         inherit (pkgs) stdenv;
 
-        nativeBuildInputs =
-          with pkgs;
+        nativeBuildInputs = with pkgs;
           [
             installShellFiles
             ncurses # tic for terminfo
@@ -59,8 +56,7 @@
           ]
           ++ lib.optional stdenv.isDarwin perl;
 
-        buildInputs =
-          with pkgs;
+        buildInputs = with pkgs;
           [
             fontconfig
             openssl
@@ -70,20 +66,19 @@
             libxkbcommon
             wayland
 
-            xorg.libX11
-            xorg.libxcb
-            xorg.xcbutil
-            xorg.xcbutilimage
-            xorg.xcbutilkeysyms
-            xorg.xcbutilwm # contains xcb-ewmh among others
+            libX11
+            libxcb
+            xcbutil
+            xcbutilimage
+            xcbutilkeysyms
+            xcbutilwm # contains xcb-ewmh among others
           ]
-          ++ lib.optionals stdenv.isDarwin ([
+          ++ lib.optionals stdenv.isDarwin [
             libiconv
-          ]);
+          ];
 
         libPath = lib.makeLibraryPath (
-          with pkgs;
-          [
+          with pkgs; [
             xorg.xcbutilimage
             libGL
             vulkan-loader
@@ -94,8 +89,7 @@
           cargo = pkgs.rust-bin.stable.latest.minimal;
           rustc = pkgs.rust-bin.stable.latest.minimal;
         };
-      in
-      {
+      in {
         packages.default = rustPlatform.buildRustPackage rec {
           inherit buildInputs nativeBuildInputs;
 
@@ -135,13 +129,21 @@
           auditable = false;
 
           preFixup =
-            lib.optionalString stdenv.isLinux /* bash */ ''
+            lib.optionalString stdenv.isLinux
+            /*
+            bash
+            */
+            ''
               patchelf \
                 --add-needed "${pkgs.libGL}/lib/libEGL.so.1" \
                 --add-needed "${pkgs.vulkan-loader}/lib/libvulkan.so.1" \
                 $out/bin/wezterm-gui
             ''
-            + lib.optionalString stdenv.isDarwin /* bash */ ''
+            + lib.optionalString stdenv.isDarwin
+            /*
+            bash
+            */
+            ''
               mkdir -p "$out/Applications"
               OUT_APP="$out/Applications/WezTerm.app"
               cp -r assets/macos/WezTerm.app "$OUT_APP"
@@ -183,9 +185,9 @@
                 meta
                 ;
 
-              nativeBuildInputs = [ pkgs.pkg-config ];
+              nativeBuildInputs = [pkgs.pkg-config];
 
-              buildInputs = [ pkgs.openssl ];
+              buildInputs = [pkgs.openssl];
 
               cargoBuildFlags = [
                 "--package"
@@ -204,13 +206,13 @@
 
             terminfo =
               pkgs.runCommand "wezterm-terminfo"
-                {
-                  nativeBuildInputs = [ pkgs.ncurses ];
-                }
-                ''
-                  mkdir -p $out/share/terminfo $out/nix-support
-                  tic -x -o $out/share/terminfo ${src}/termwiz/data/wezterm.terminfo
-                '';
+              {
+                nativeBuildInputs = [pkgs.ncurses];
+              }
+              ''
+                mkdir -p $out/share/terminfo $out/nix-support
+                tic -x -o $out/share/terminfo ${src}/termwiz/data/wezterm.terminfo
+              '';
           };
 
           meta.mainProgram = "wezterm";
